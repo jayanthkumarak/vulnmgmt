@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Function to log messages
+log_message() {
+  echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
+}
+
+# Function to uninstall the Tenable Nessus Agent
+uninstall_tenable_agent() {
+  # Check if the script is run as root
+  if [ "$(/usr/bin/id -u)" -ne 0 ]; then
+    log_message "This script must be run as root. Exiting."
+    exit 1
+  fi
+
+  # Remove Tenable Nessus directories and files if they exist
+  NESSUS_DIRS=("/Library/NessusAgent" 
+               "/Library/LaunchDaemons/com.tenablesecurity.nessusagent.plist"
+               "/Library/PreferencePanes/Nessus Agent Preferences.prefPane")
+
+  for dir_or_file in "${NESSUS_DIRS[@]}"; do
+    if [ -e "$dir_or_file" ]; then
+      /bin/rm -rf "$dir_or_file" 2>>/tmp/nessus_uninstall_errors.log
+      if [ $? -eq 0 ]; then
+        log_message "Successfully removed $dir_or_file"
+      else
+        log_message "Failed to remove $dir_or_file. Check /tmp/nessus_uninstall_errors.log for details."
+      fi
+    else
+      log_message "$dir_or_file not found, skipping removal."
+    fi
+  done
+
+  # Disable the Nessus Agent service if it's running
+  if /bin/launchctl list | /usr/bin/grep -q com.tenablesecurity.nessusagent; then
+    log_message "Disabling the Nessus Agent service..."
+    sudo /bin/launchctl remove com.tenablesecurity.nessusagent
+    log_message "Disabled Nessus Agent service."
+  else
+    log_message "Nessus Agent service not running, skipping disabling."
+  fi
+
+  log_message "Tenable Nessus Agent uninstallation process completed."
+}
+
+# Main execution starts here
+log_message "Starting Tenable Nessus Agent uninstallation."
+uninstall_tenable_agent
