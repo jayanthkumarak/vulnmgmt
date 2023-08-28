@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Set -e to exit on error
-set -e
-
 # Function to log messages
 log_message() {
   echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
@@ -19,8 +16,13 @@ uninstall_tenable_agent() {
   # Find all of the Nessus Agent directories and files
   NESSUS_DIRS=$(find / -type d -name "NessusAgent" -o -type f -name "*nessusagent*")
 
-  # Remove all of the Nessus Agent directories and files
-  rm -rf "${NESSUS_DIRS[@]}"
+  # Check and Remove all of the Nessus Agent directories and files
+  if [[ ! -z "$NESSUS_DIRS" ]]; then
+    rm -rf $NESSUS_DIRS
+    log_message "Removed Nessus directories and files."
+  else
+    log_message "Nessus directories and files not found."
+  fi
 
   # Disable the Nessus Agent service if it's running
   if launchctl list | grep -q com.tenablesecurity.nessusagent; then
@@ -34,4 +36,3 @@ uninstall_tenable_agent() {
 
 # Main execution starts here
 log_message "Starting Tenable Nessus Agent uninstallation."
-uninstall_tenable_agent
