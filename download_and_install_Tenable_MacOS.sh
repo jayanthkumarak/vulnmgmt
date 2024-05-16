@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Declaring URLs and file paths for downloading, saving, and extracting the Tenable Agent DMG file
-DMG_URL="https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.5.4.dmg"
-DMG_LOCATION="/tmp/Nessus-10.5.4.dmg"
+DMG_URL="https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.6.4.dmg"
+DMG_LOCATION="/tmp/Nessus-10.6.4.dmg"
 TMP_MOUNT="/tmp/nessus_mount"
 PKG_NAME="Install Nessus Agent.pkg"
 PLUGINS_SET="./plugins_set.tgz" # Replace with the actual path to the plugins set, if available
