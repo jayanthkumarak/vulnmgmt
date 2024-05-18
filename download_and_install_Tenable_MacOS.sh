@@ -1,56 +1,68 @@
 #!/bin/bash
 
-# Declaring URLs and file paths for downloading, saving, and extracting the Tenable Agent DMG file
-DMG_URL="https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.6.4.dmg"
-DMG_LOCATION="/tmp/Nessus-10.6.4.dmg"
-TMP_MOUNT="/tmp/nessus_mount"
-PKG_NAME="Install Nessus Agent.pkg"
-PLUGINS_SET="./plugins_set.tgz" # Replace with the actual path to the plugins set, if available
+# This script downloads, installs, and optionally updates plugins for the Tenable Nessus Agent.
+# Make sure to set these environment variables or modify the defaults before running the script.
 
-# Function to log messages to the console
+# Define URLs and file paths
+DMG_URL=${DMG_URL:-"https://www.tenable.com/downloads/api/v2/pages/nessus/files/Nessus-10.6.4.dmg"}  # Default URL; can be overridden by an environment variable
+DMG_LOCATION="/tmp/Nessus-$(basename "$DMG_URL")"
+TMP_MOUNT=$(mktemp -d /tmp/nessus_mount.XXXXXX)
+PKG_NAME="Install Nessus Agent.pkg"
+PLUGINS_SET=${PLUGINS_SET:-"./plugins_set.tgz"}  # Default path; can be overridden by an environment variable
+
+# Function to log messages with timestamps for better readability
 log_message() {
-  echo "$1"
+  echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
 }
 
-# Function to download the Tenable DMG file from the specified URL
+# Function to download the Tenable Nessus Agent DMG file
 download_dmg() {
-  log_message "Downloading Tenable DMG file..."
+  log_message "Downloading Tenable Nessus Agent DMG..."
   curl --request GET \
-    --url "$DMG_URL" \
-    --output "$DMG_LOCATION"
-  
-  if [ ! -f $DMG_LOCATION ]; then
-    log_message "Failed to download Tenable DMG file. Exiting."
+       --url "$DMG_URL" \
+       --output "$DMG_LOCATION"
+
+  # Check download success and exit if failed
+  if [ ! -f "$DMG_LOCATION" ]; then
+    log_message "Failed to download Tenable Nessus Agent DMG. Exiting."
     exit 1
   fi
 }
 
-# Function to install the Tenable package from the downloaded DMG file
+# Function to install the Tenable Nessus Agent package
 install_package() {
   # Check if the script is run as root
   if [ "$(id -u)" -ne 0 ]; then
-    log_message "This script must be run as root. Exiting."
+    log_message "This script must be run with root privileges. Exiting."
     exit 1
   fi
 
-  # Mount the DMG file to access its contents
-  hdiutil attach -mountpoint $TMP_MOUNT $DMG_LOCATION
+  # Mount the DMG file
+  log_message "Mounting DMG..."
+  hdiutil attach -mountpoint "$TMP_MOUNT" "$DMG_LOCATION"
 
-  # Install the Nessus Agent from the mounted DMG
+  # Install the Nessus Agent package from the mounted DMG
+  log_message "Installing Nessus Agent..."
   sudo installer -pkg "$TMP_MOUNT/$PKG_NAME" -target /
 
-  # Unmount the DMG file after installation
+  # Unmount the DMG file
+  log_message "Unmounting DMG..."
   hdiutil detach "$TMP_MOUNT"
 
-  # Update plugins set if available
-  if [ -f $PLUGINS_SET ]; then
-    /opt/nessus_agent/sbin/nessuscli agent update --file=$PLUGINS_SET
+  # Update plugins set if available _ OPTIONALLY REMOVE IF NOT NEEDED
+  if [ -f "$PLUGINS_SET" ]; then
+    log_message "Updating Nessus Agent plugins..."
+    /opt/nessus_agent/sbin/nessuscli agent update --file="$PLUGINS_SET"
   fi
 
-  log_message "Tenable installation completed. Please follow any additional instructions to complete the setup."
+  # Clean up the temporary mount point
+  log_message "Cleaning up temporary directory..."
+  rm -rf "$TMP_MOUNT"  # Remove the directory tree recursively
+
+  log_message "Tenable Nessus Agent installation completed. Please follow any additional instructions to complete the setup."
 }
 
-# Main execution starts here
-log_message "Starting Tenable installation."
-download_dmg # Download the DMG file
-install_package # Extract and install the Tenable package
+# Main script execution
+log_message "Starting Tenable Nessus Agent installation..."
+download_dmg
+install_package
